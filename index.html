@@ -1,1 +1,210 @@
 
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demo EPP con Exportación PDF</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- SignaturePad -->
+  <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+  <!-- QRCode.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- html2pdf.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body class="bg-slate-100 p-4 md:p-8 font-sans">
+  
+  <!-- Formulario de Entrada -->
+  <div class="max-w-2xl mx-auto bg-white p-6 rounded-xl shadow-md border border-slate-200 mb-8">
+    <div class="border-b pb-4 mb-4">
+      <h1 class="text-xl font-bold text-slate-800">Módulo EPP - Entrega y Firma</h1>
+      <p class="text-sm text-slate-500">Ingresa los datos para generar el documento oficial en PDF.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">RUT Trabajador</label>
+        <input type="text" id="workerRut" value="12.345.678-9" class="w-full p-2 border rounded text-sm">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre Trabajador</label>
+        <input type="text" id="workerName" value="Juan Pérez López" class="w-full p-2 border rounded text-sm">
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <label class="block text-xs font-semibold text-slate-600 mb-2">Elementos a Entregar</label>
+      <div class="space-y-2 bg-slate-50 p-3 rounded border text-sm">
+        <label class="flex items-center gap-2">
+          <input type="checkbox" class="epp-item" value="Zapatos de Seguridad Calzado Talla 42" checked>
+          <span>Zapatos de Seguridad (Talla 42)</span>
+        </label>
+        <label class="flex items-center gap-2">
+          <input type="checkbox" class="epp-item" value="Casco Dieléctrico con Barbiquejo" checked>
+          <span>Casco Dieléctrico con Barbiquejo</span>
+        </label>
+        <label class="flex items-center gap-2">
+          <input type="checkbox" class="epp-item" value="Guantes de Nitrilo Antideslizantes" checked>
+          <span>Guantes de Nitrilo Antideslizantes</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <div class="flex justify-between items-center mb-1">
+        <label class="block text-xs font-semibold text-slate-600">Firma en Pantalla</label>
+        <button id="clearBtn" class="text-xs text-red-600 hover:underline">Limpiar firma</button>
+      </div>
+      <div class="border-2 border-dashed border-slate-300 rounded-lg bg-slate-50">
+        <canvas id="signatureCanvas" class="w-full h-36 touch-none"></canvas>
+      </div>
+    </div>
+
+    <button id="generateBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg text-sm transition">
+      Generar y Descargar Comprobante PDF
+    </button>
+  </div>
+
+  <!-- Plantilla Oculta para Renderizar el PDF -->
+  <div class="hidden">
+    <div id="pdfTemplate" class="p-8 bg-white text-slate-800 text-xs w-[700px] leading-relaxed">
+      
+      <!-- Encabezado PDF -->
+      <div class="flex justify-between items-center border-b-2 border-slate-800 pb-4 mb-4">
+        <div>
+          <h2 class="text-lg font-bold uppercase text-slate-900">Comprobante de Entrega de EPP</h2>
+          <p class="text-slate-500">Cumplimiento Ley 16.744 / Ord. N° 4890/282 DT</p>
+        </div>
+        <div class="text-right">
+          <p class="font-bold text-slate-700">FOLIO: <span id="pdfFolio"></span></p>
+          <p id="pdfDate" class="text-slate-500"></p>
+        </div>
+      </div>
+
+      <!-- Datos del Trabajador -->
+      <div class="bg-slate-50 p-3 rounded border border-slate-200 mb-4">
+        <p><strong>Trabajador:</strong> <span id="pdfName"></span></p>
+        <p><strong>RUT:</strong> <span id="pdfRut"></span></p>
+      </div>
+
+      <!-- Tabla de EPP -->
+      <h3 class="font-bold text-sm mb-2 text-slate-800">Detalle de Elementos Entregados:</h3>
+      <table class="w-full border-collapse border border-slate-300 mb-4">
+        <thead>
+          <tr class="bg-slate-100 text-left">
+            <th class="border border-slate-300 p-2">Item</th>
+            <th class="border border-slate-300 p-2">Descripción EPP</th>
+            <th class="border border-slate-300 p-2 text-center">Cant.</th>
+          </tr>
+        </thead>
+        <tbody id="pdfEppTable"></tbody>
+      </table>
+
+      <!-- Declaración Legal -->
+      <div class="border p-3 rounded mb-6 text-[10px] text-slate-600 bg-slate-50">
+        <p><strong>DECLARACIÓN:</strong> Declaro haber recibido en forma gratuita los Elementos de Protección Personal indicados en este documento, junto con la instrucción sobre su correcto uso, cuidado y mantención. Me comprometo a utilizarlos de carácter obligatorio durante mi jornada laboral según el Art. 53 del DS N° 594.</p>
+      </div>
+
+      <!-- Firma y Verificación -->
+      <div class="grid grid-cols-2 gap-4 items-end pt-4 border-t border-slate-200">
+        <div class="text-center">
+          <div class="border-b border-slate-400 pb-1 mb-1 h-20 flex justify-center items-end">
+            <img id="pdfSignatureImg" class="max-h-16 max-w-full object-contain" src="" alt="Firma">
+          </div>
+          <p class="font-bold">Firma del Trabajador</p>
+          <p id="pdfWorkerSignatureLabel" class="text-[10px] text-slate-500"></p>
+        </div>
+
+        <div class="flex items-center gap-3 bg-slate-50 p-2 rounded border border-slate-200">
+          <div id="qrcode"></div>
+          <div class="text-[9px] text-slate-500">
+            <p class="font-bold text-slate-700">Sello Digital de Validación</p>
+            <p>ISO Timestamp: <span id="pdfTimestamp"></span></p>
+            <p>Verificación DT: En línea</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('signatureCanvas');
+    const signaturePad = new SignaturePad(canvas, { backgroundColor: 'rgb(248, 250, 252)' });
+
+    function resizeCanvas() {
+      const ratio = Math.max(window.devicePixelRatio || 1, 1);
+      canvas.width = canvas.offsetWidth * ratio;
+      canvas.height = canvas.offsetHeight * ratio;
+      canvas.getContext("2d").scale(ratio, ratio);
+      signaturePad.clear();
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    document.getElementById('clearBtn').addEventListener('click', () => signaturePad.clear());
+
+    document.getElementById('generateBtn').addEventListener('click', () => {
+      if (signaturePad.isEmpty()) {
+        alert("Por favor firma el documento antes de generar el PDF.");
+        return;
+      }
+
+      const name = document.getElementById('workerName').value;
+      const rut = document.getElementById('workerRut').value;
+      const selectedEPP = Array.from(document.querySelectorAll('.epp-item:checked')).map(el => el.value);
+      const folio = 'EPP-' + Math.floor(100000 + Math.random() * 900000);
+      const now = new Date();
+
+      // Rellenar datos en la plantilla PDF
+      document.getElementById('pdfFolio').textContent = folio;
+      document.getElementById('pdfDate').textContent = now.toLocaleDateString('es-CL');
+      document.getElementById('pdfName').textContent = name;
+      document.getElementById('pdfRut').textContent = rut;
+      document.getElementById('pdfWorkerSignatureLabel').textContent = `${name} (${rut})`;
+      document.getElementById('pdfSignatureImg').src = signaturePad.toDataURL();
+      document.getElementById('pdfTimestamp').textContent = now.toISOString();
+
+      // Rellenar tabla de EPP
+      const tbody = document.getElementById('pdfEppTable');
+      tbody.innerHTML = '';
+      selectedEPP.forEach((item, idx) => {
+        tbody.innerHTML += `
+          <tr>
+            <td class="border border-slate-300 p-2 text-center">${idx + 1}</td>
+            <td class="border border-slate-300 p-2">${item}</td>
+            <td class="border border-slate-300 p-2 text-center">1</td>
+          </tr>
+        `;
+      });
+
+      // Generar código QR
+      const qrContainer = document.getElementById('qrcode');
+      qrContainer.innerHTML = '';
+      new QRCode(qrContainer, {
+        text: `VERIFICACION-EPP:${folio}|RUT:${rut}|FECHA:${now.toISOString()}`,
+        width: 60,
+        height: 60
+      });
+
+      // Configuración y conversión a PDF
+      const element = document.getElementById('pdfTemplate');
+      element.parentElement.classList.remove('hidden'); // Mostrar temporalmente para html2pdf
+
+      const opt = {
+        margin:       10,
+        filename:     `Comprobante_EPP_${rut}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      html2pdf().set(opt).from(element).save().then(() => {
+        element.parentElement.classList.add('hidden'); // Volver a ocultar la plantilla
+      });
+    });
+  </script>
+</body>
+</html>
