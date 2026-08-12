@@ -1,273 +1,173 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Módulo EPP - Firma y Exportación PDF</title>
-  <!-- Tailwind CSS -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Entrega de EPP · Comprobante con Firma</title>
+
+  <!-- Tailwind (CDN) para el layout utilitario -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- SignaturePad -->
+  <!-- Estilos de componentes propios -->
+  <link rel="stylesheet" href="assets/css/styles.css" />
+
+  <!-- Librerías de terceros (firma, QR, PDF) -->
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
-  <!-- QRCode.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <!-- html2pdf.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
-<body class="bg-gray-50 p-4 md:p-8 font-sans text-gray-800 antialiased">
-  
-  <!-- Formulario de Entrada -->
-  <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden mb-8">
-    
-    <!-- Encabezado del Formulario con Logo -->
-    <div class="bg-blue-700 px-6 py-5 border-b border-gray-200">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
+<body class="bg-slate-100 p-4 md:p-8">
+
+  <main class="max-w-2xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+
+    <!-- Encabezado -->
+    <header class="app-header px-6 py-5 border-b border-slate-200">
+      <img class="app-header__logo" src="assets/img/alo-group-logo.png" alt="ALO Group" />
+      <div>
+        <h1 class="app-header__title">Entrega de EPP</h1>
+        <p class="app-header__subtitle">
+          <span id="companyName">Empresa</span> · Departamento de Prevención de Riesgos
+        </p>
+      </div>
+    </header>
+
+    <div class="px-6 py-6 space-y-6">
+
+      <!-- Trabajador -->
+      <section>
+        <label class="field-label" for="workerSelect">Trabajador</label>
+        <select id="workerSelect" class="input"></select>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
           <div>
-            <h1 class="text-xl font-bold text-white">Módulo EPP - Entrega y Firma</h1>
-            <p class="text-xs text-blue-100 mt-1">Complete los datos para generar el documento oficial.</p>
+            <label class="field-label" for="workerRut">RUT</label>
+            <input id="workerRut" class="input" type="text" inputmode="text" placeholder="12.345.678-9" />
+            <p id="err-rut" class="field-hint"></p>
+          </div>
+          <div>
+            <label class="field-label" for="workerName">Nombre</label>
+            <input id="workerName" class="input" type="text" placeholder="Nombre y apellidos" />
+            <p id="err-name" class="field-hint"></p>
+          </div>
+          <div>
+            <label class="field-label" for="workerCargo">Cargo</label>
+            <input id="workerCargo" class="input" type="text" placeholder="Cargo" />
+            <p id="err-cargo" class="field-hint"></p>
+          </div>
+          <div>
+            <label class="field-label" for="workerSucursal">Sucursal</label>
+            <input id="workerSucursal" class="input" type="text" placeholder="Sucursal" />
+            <p id="err-sucursal" class="field-hint"></p>
           </div>
         </div>
-        <!-- Logo en la Interfaz -->
-        <div class="bg-white p-1.5 rounded shadow-sm">
-          <img src="https://drive.google.com/file/d/1yI3NHCkqjoo3n7gE0brpX2YeGp34XjWj/view?usp=drive_link" alt="ALO Group" class="h-8 object-contain">
+      </section>
+
+      <!-- EPP -->
+      <section>
+        <label class="field-label">Elementos a entregar</label>
+        <div id="eppList" class="epp-grid"></div>
+        <p id="err-epp" class="field-hint"></p>
+      </section>
+
+      <!-- Firma -->
+      <section>
+        <div class="flex justify-between items-center mb-2">
+          <label class="field-label" style="margin:0">Firma del trabajador</label>
+          <button id="clearBtn" class="link-btn" type="button">Limpiar firma</button>
         </div>
-      </div>
+        <div class="signature-box">
+          <canvas id="signatureCanvas"></canvas>
+        </div>
+        <p id="err-signature" class="field-hint"></p>
+      </section>
+
+      <!-- Acción -->
+      <button id="generateBtn" class="btn-primary" type="button">Generar comprobante</button>
     </div>
+  </main>
 
-    <div class="p-6 md:p-8">
-      <!-- Datos del Trabajador -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
-        <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-1.5">RUT Trabajador</label>
-          <input type="text" id="workerRut" value="12.345.678-9" 
-                 class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all text-sm outline-none shadow-sm">
+  <!-- ===================== Plantilla oculta del PDF (A5) ===================== -->
+  <div class="hidden" aria-hidden="true">
+    <div id="pdfTemplate" class="pdf-sheet">
+
+      <div class="pdf-head">
+        <div class="pdf-head__brand">
+          <img class="pdf-head__logo" src="assets/img/alo-group-logo.png" alt="" />
+          <div>
+            <div class="pdf-head__title">Comprobante de<br />Entrega de EPP</div>
+            <div class="pdf-head__sub">Cumplimiento Ley N° 16.744</div>
+          </div>
         </div>
-        <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-1.5">Nombre Trabajador</label>
-          <input type="text" id="workerName" value="Juan Pérez López" 
-                 class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all text-sm outline-none shadow-sm">
-        </div>
-      </div>
-
-      <!-- Selección de EPP -->
-      <div class="mb-6">
-        <label class="block text-sm font-semibold text-gray-700 mb-3">Elementos a Entregar</label>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <label class="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-blue-50 hover:border-blue-200 transition-colors">
-            <input type="checkbox" class="epp-item mt-0.5 w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" value="Zapatos de Seguridad Calzado Talla 42" checked>
-            <span class="text-sm font-medium text-gray-700">Zapatos de Seguridad<br><span class="text-xs text-gray-500 font-normal">Talla 42</span></span>
-          </label>
-          <label class="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-blue-50 hover:border-blue-200 transition-colors">
-            <input type="checkbox" class="epp-item mt-0.5 w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" value="Casco Dieléctrico con Barbiquejo" checked>
-            <span class="text-sm font-medium text-gray-700">Casco Dieléctrico<br><span class="text-xs text-gray-500 font-normal">Con barbiquejo</span></span>
-          </label>
-          <label class="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-blue-50 hover:border-blue-200 transition-colors">
-            <input type="checkbox" class="epp-item mt-0.5 w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" value="Guantes de Nitrilo Antideslizantes" checked>
-            <span class="text-sm font-medium text-gray-700">Guantes de Nitrilo<br><span class="text-xs text-gray-500 font-normal">Antideslizantes</span></span>
-          </label>
-        </div>
-      </div>
-
-      <!-- Área de Firma -->
-      <div class="mb-8">
-        <div class="flex justify-between items-end mb-2">
-          <label class="block text-sm font-semibold text-gray-700">Firma en Pantalla</label>
-          <button id="clearBtn" class="text-xs font-medium text-red-500 hover:text-red-700 hover:underline flex items-center gap-1 transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
-            </svg>
-            Limpiar trazo
-          </button>
-        </div>
-        <div class="relative border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 hover:border-blue-400 transition-colors overflow-hidden shadow-inner">
-          <canvas id="signatureCanvas" class="w-full h-40 touch-none cursor-crosshair"></canvas>
-          <div class="absolute bottom-2 right-3 text-[10px] text-gray-400 pointer-events-none font-medium">Firme dentro del recuadro</div>
-        </div>
-      </div>
-
-      <!-- Botón de Generación -->
-      <button id="generateBtn" class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-3.5 px-6 rounded-xl text-sm shadow-lg hover:shadow-xl transform transition-all hover:scale-[1.01] active:scale-[0.98]">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-        Generar y Descargar Comprobante PDF
-      </button>
-    </div>
-  </div>
-
-  <!-- Plantilla Oculta para Renderizar el PDF -->
-  <div class="hidden">
-    <div id="pdfTemplate" class="p-10 bg-white text-gray-800 text-xs w-[793px] min-h-[1122px] leading-relaxed mx-auto font-sans relative">
-      
-      <!-- Fondo decorativo superior -->
-      <div class="absolute top-0 left-0 w-full h-3 bg-blue-700"></div>
-
-      <!-- Encabezado PDF Corporativo con Logo -->
-      <div class="flex justify-between items-center border-b-2 border-gray-800 pb-5 mb-6 mt-6">
-        
-        <!-- Zona Logo -->
-        <div class="w-1/4">
-          <img src="ALO Group - Logo (1)_page-0001.jpg" alt="ALO Group" class="max-h-16 object-contain">
-        </div>
-
-        <!-- Zona Título -->
-        <div class="w-2/4 text-center">
-          <h2 class="text-xl font-black uppercase text-gray-900 tracking-tight">Comprobante de Entrega de EPP</h2>
-          <p class="text-gray-500 font-medium mt-1">Departamento de Prevención de Riesgos</p>
-          <p class="text-gray-400 text-[10px]">Ley 16.744 / Ord. N° 4890/282 DT</p>
-        </div>
-
-        <!-- Zona Folio y Fecha -->
-        <div class="w-1/4 text-right">
-          <div class="inline-block bg-gray-50 p-3 rounded-lg border border-gray-200 text-left">
-            <p class="font-bold text-gray-800 text-sm">FOLIO: <span id="pdfFolio" class="text-blue-700"></span></p>
-            <p class="text-gray-500 mt-1 font-medium text-[11px]">Fecha: <span id="pdfDate" class="text-gray-700"></span></p>
+        <div class="pdf-folio">
+          <span class="pdf-folio__badge">FOLIO: <span id="pdfFolio"></span></span>
+          <div class="pdf-folio__date">
+            Fecha: <span id="pdfDate"></span> · Hora: <span id="pdfTime"></span>
           </div>
         </div>
       </div>
 
-      <!-- Datos del Trabajador -->
-      <h3 class="font-bold text-gray-800 uppercase text-[11px] mb-2 tracking-wider">1. Antecedentes del Trabajador</h3>
-      <div class="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-200 mb-6">
-        <p class="text-[11px] text-gray-500 uppercase">Nombre Completo<br><strong class="text-sm text-gray-900 normal-case" id="pdfName"></strong></p>
-        <p class="text-[11px] text-gray-500 uppercase">RUT<br><strong class="text-sm text-gray-900 normal-case" id="pdfRut"></strong></p>
+      <div class="pdf-worker">
+        <p><strong>Trabajador:</strong> <span id="pdfName"></span></p>
+        <p><strong>RUT:</strong> <span id="pdfRut"></span></p>
+        <p><strong>Cargo:</strong> <span id="pdfCargo"></span></p>
+        <p><strong>Sucursal:</strong> <span id="pdfSucursal"></span></p>
       </div>
 
-      <!-- Tabla de EPP -->
-      <h3 class="font-bold text-gray-800 uppercase text-[11px] mb-2 tracking-wider">2. Detalle de Elementos Entregados</h3>
-      <table class="w-full border-collapse border border-gray-300 mb-6 rounded-lg overflow-hidden">
+      <h3 class="pdf-section-title">Detalle de elementos entregados</h3>
+      <table class="pdf-table">
         <thead>
-          <tr class="bg-gray-100 text-left text-gray-700 uppercase text-[10px] tracking-wider">
-            <th class="border border-gray-300 p-3 w-12 text-center font-bold">N°</th>
-            <th class="border border-gray-300 p-3 font-bold">Descripción del Elemento de Protección Personal</th>
-            <th class="border border-gray-300 p-3 w-20 text-center font-bold">Cantidad</th>
+          <tr>
+            <th class="center" style="width:36px">N°</th>
+            <th>Elemento de Protección Personal</th>
+            <th class="center" style="width:48px">Cant.</th>
           </tr>
         </thead>
-        <tbody id="pdfEppTable" class="text-[11px]">
-          <!-- Las filas se inyectan por JS -->
-        </tbody>
+        <tbody id="pdfEppTable"></tbody>
       </table>
 
-      <!-- Declaración Legal -->
-      <h3 class="font-bold text-gray-800 uppercase text-[11px] mb-2 tracking-wider">3. Declaración Jurada</h3>
-      <div class="border border-gray-300 p-4 rounded-lg mb-8 text-[11px] text-gray-600 bg-gray-50 text-justify leading-relaxed">
-        <p>Declaro haber recibido en forma gratuita los Elementos de Protección Personal (EPP) indicados en este documento, junto con la instrucción teórica y práctica sobre su correcto uso, cuidado, mantención y limitaciones.</p>
-        <p class="mt-2">Me comprometo a utilizarlos de carácter <strong>obligatorio y permanente</strong> durante mi jornada laboral, manteniéndolos en buen estado, dando cumplimiento al Art. 53 del DS N° 594 y las normativas internas de la empresa. En caso de deterioro o pérdida, me comprometo a dar aviso inmediato a mi jefatura directa.</p>
+      <div class="pdf-legal">
+        <strong>DECLARACIÓN Y MARCO LEGAL:</strong> Declaro haber recibido en forma gratuita los
+        Elementos de Protección Personal detallados, junto con la instrucción sobre su correcto uso,
+        cuidado y mantención, comprometiéndome a utilizarlos de forma obligatoria durante mi jornada laboral.
+        <ul>
+          <li>Ley N° 16.744 sobre Accidentes del Trabajo y Enfermedades Profesionales.</li>
+          <li>Ordinario N° 4890/282 de la Dirección del Trabajo.</li>
+          <li>Artículo 53 del Decreto Supremo N° 594 del Ministerio de Salud.</li>
+        </ul>
       </div>
 
-      <!-- Firma y Verificación -->
-      <div class="grid grid-cols-2 gap-8 items-end pt-8">
-        
-        <!-- Bloque Firma -->
-        <div class="text-center">
-          <div class="border-b-2 border-gray-800 pb-2 mb-2 h-24 flex justify-center items-end mx-10">
-            <img id="pdfSignatureImg" class="max-h-20 max-w-full object-contain mix-blend-multiply" src="" alt="Firma">
+      <div class="pdf-foot">
+        <div class="pdf-sign">
+          <div class="pdf-sign__canvas">
+            <img id="pdfSignatureImg" src="" alt="Firma del trabajador" />
           </div>
-          <p class="font-bold text-gray-900 text-sm">Firma del Trabajador</p>
-          <p id="pdfWorkerSignatureLabel" class="text-[11px] text-gray-500 mt-1"></p>
+          <div class="pdf-sign__role">Firma del Trabajador</div>
+          <div class="pdf-sign__name" id="pdfWorkerSignatureLabel"></div>
         </div>
-
-        <!-- Bloque QR -->
-        <div class="flex items-center justify-end gap-4">
-          <div class="flex items-center gap-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
-            <div id="qrcode" class="bg-white p-1 rounded border border-gray-200"></div>
-            <div class="text-[10px] text-gray-500">
-              <p class="font-bold text-blue-700 uppercase tracking-wide text-xs mb-1">Sello Digital</p>
-              <p class="mb-0.5"><strong class="text-gray-700">Timestamp ISO:</strong><br><span id="pdfTimestamp" class="break-all"></span></p>
-              <p><strong class="text-gray-700">Validación DT:</strong> En línea</p>
-            </div>
+        <div class="pdf-seal">
+          <div id="qrcode"></div>
+          <div class="pdf-seal__label">
+            Sello digital de validación<br />
+            <span id="pdfTimestamp"></span>
           </div>
         </div>
       </div>
 
+      <div class="pdf-company" id="pdfCompanyName">Empresa</div>
     </div>
   </div>
 
-  <script>
-    const canvas = document.getElementById('signatureCanvas');
-    const signaturePad = new SignaturePad(canvas, { 
-      backgroundColor: 'rgb(249, 250, 251)', 
-      penColor: 'rgb(17, 24, 39)' 
-    });
+  <!-- ============================ Overlay progreso ========================= -->
+  <div id="progressOverlay" class="progress-overlay hidden">
+    <div class="progress-card">
+      <h3>Generando comprobante…</h3>
+      <ul id="progressList" class="progress-list"></ul>
+    </div>
+  </div>
 
-    function resizeCanvas() {
-      const ratio = Math.max(window.devicePixelRatio || 1, 1);
-      canvas.width = canvas.offsetWidth * ratio;
-      canvas.height = canvas.offsetHeight * ratio;
-      canvas.getContext("2d").scale(ratio, ratio);
-      signaturePad.clear();
-    }
-    window.addEventListener("resize", resizeCanvas);
-    resizeCanvas();
+  <!-- Toast de avisos -->
+  <div id="toast" class="toast hidden"></div>
 
-    document.getElementById('clearBtn').addEventListener('click', () => signaturePad.clear());
-
-    document.getElementById('generateBtn').addEventListener('click', () => {
-      if (signaturePad.isEmpty()) {
-        alert("Por favor firma el documento antes de generar el PDF.");
-        return;
-      }
-
-      const name = document.getElementById('workerName').value;
-      const rut = document.getElementById('workerRut').value;
-      const selectedEPP = Array.from(document.querySelectorAll('.epp-item:checked')).map(el => el.value);
-      const folio = 'EPP-' + Math.floor(100000 + Math.random() * 900000);
-      const now = new Date();
-
-      // Rellenar datos en la plantilla PDF
-      document.getElementById('pdfFolio').textContent = folio;
-      document.getElementById('pdfDate').textContent = now.toLocaleDateString('es-CL');
-      document.getElementById('pdfName').textContent = name;
-      document.getElementById('pdfRut').textContent = rut;
-      document.getElementById('pdfWorkerSignatureLabel').textContent = `${name} - RUT: ${rut}`;
-      document.getElementById('pdfSignatureImg').src = signaturePad.toDataURL();
-      document.getElementById('pdfTimestamp').textContent = now.toISOString();
-
-      // Rellenar tabla de EPP con filas estilizadas
-      const tbody = document.getElementById('pdfEppTable');
-      tbody.innerHTML = '';
-      selectedEPP.forEach((item, idx) => {
-        const bgClass = idx % 2 === 0 ? 'bg-white' : 'bg-gray-50';
-        tbody.innerHTML += `
-          <tr class="${bgClass}">
-            <td class="border border-gray-300 p-2.5 text-center font-medium">${idx + 1}</td>
-            <td class="border border-gray-300 p-2.5 text-gray-800">${item}</td>
-            <td class="border border-gray-300 p-2.5 text-center font-medium">1</td>
-          </tr>
-        `;
-      });
-
-      // Generar código QR
-      const qrContainer = document.getElementById('qrcode');
-      qrContainer.innerHTML = '';
-      new QRCode(qrContainer, {
-        text: `VERIFICACION-EPP:${folio}|RUT:${rut}|FECHA:${now.toISOString()}`,
-        width: 72,
-        height: 72,
-        colorDark : "#111827", 
-        colorLight : "#ffffff",
-        correctLevel : QRCode.CorrectLevel.L
-      });
-
-      // Configuración y conversión a PDF
-      const element = document.getElementById('pdfTemplate');
-      element.parentElement.classList.remove('hidden'); 
-
-      const opt = {
-        margin:       10,
-        filename:     `Comprobante_EPP_${rut}.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
-
-      html2pdf().set(opt).from(element).save().then(() => {
-        element.parentElement.classList.add('hidden'); 
-      });
-    });
-  </script>
+  <!-- App (ES Modules) -->
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>
