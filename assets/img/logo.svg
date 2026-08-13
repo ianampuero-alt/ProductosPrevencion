@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Logo empresa">
+  <rect x="2" y="2" width="60" height="60" rx="12" fill="#0f2540"/>
+  <path d="M32 12 L50 20 V33 C50 44 42 51 32 54 C22 51 14 44 14 33 V20 Z" fill="#f59e0b"/>
+  <path d="M32 20 L42 24 V33 C42 40 37 44 32 46 C27 44 22 40 22 33 V24 Z" fill="#0f2540"/>
+  <path d="M27 32 l4 4 l7 -8" fill="none" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

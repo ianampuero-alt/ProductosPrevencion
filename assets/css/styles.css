@@ -1,0 +1,311 @@
+/* =============================================================================
+   styles.css — Estilos de componentes del Módulo EPP
+   -----------------------------------------------------------------------------
+   Dirección visual: "seguridad industrial". Base acero/pizarra, acción azul
+   profunda y un ÚNICO acento ámbar de alta visibilidad reservado para estados
+   y progreso (nunca decorativo). Interfaz táctil: objetivos ≥ 44px.
+
+   Tailwind (CDN) cubre el layout utilitario; aquí van los componentes con
+   estados y detalles que no conviene repetir como utilidades sueltas.
+   ========================================================================== */
+
+:root {
+  --steel-950: #0b1b2e;
+  --steel-900: #0f2540;
+  --steel-700: #1e3a5f;
+  --steel-100: #e7eef6;
+  --ink: #0f172a;
+  --muted: #64748b;
+  --line: #d8e0ea;
+  --action: #1d4ed8;      /* azul acción */
+  --action-hover: #1e40af;
+  --hivis: #f59e0b;       /* ámbar de estado: úsese con moderación */
+  --ok: #15803d;
+  --danger: #b91c1c;
+  --surface: #ffffff;
+}
+
+* { -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: #0f172a;
+}
+
+/* ----------------------------- Encabezado app ---------------------------- */
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+.app-header__logo { height: 38px; width: auto; object-fit: contain; }
+.app-header__title { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.01em; }
+.app-header__subtitle { font-size: 0.8rem; color: #64748b; }
+
+/* --------------------------------- Campos -------------------------------- */
+.field-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  margin-bottom: 0.3rem;
+}
+.input {
+  width: 100%;
+  min-height: 44px;                 /* táctil */
+  padding: 0.55rem 0.7rem;
+  border: 1px solid #d8e0ea;
+  border-radius: 0.6rem;
+  font-size: 0.95rem;
+  background: #fff;
+  transition: border-color .15s, box-shadow .15s;
+}
+.input:focus {
+  outline: none;
+  border-color: #1d4ed8;
+  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.15);
+}
+.input--error { border-color: #b91c1c; box-shadow: 0 0 0 3px rgba(185,28,28,.12); }
+.field-hint { min-height: 1rem; font-size: 0.72rem; color: #b91c1c; margin-top: 0.2rem; }
+
+/* --------------------------- Opciones de EPP ----------------------------- */
+.epp-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+@media (min-width: 640px) { .epp-grid { grid-template-columns: 1fr 1fr; } }
+
+.epp-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid #d8e0ea;
+  border-radius: 0.7rem;
+  background: #fff;
+  cursor: pointer;
+  min-height: 44px;
+  transition: border-color .15s, background .15s;
+}
+.epp-option:hover { border-color: #b9c6d6; }
+.epp-option input { margin-top: 0.15rem; width: 20px; height: 20px; accent-color: #1d4ed8; }
+.epp-option:has(input:checked) { border-color: #1d4ed8; background: #f3f7ff; }
+.epp-option__text { display: flex; flex-direction: column; line-height: 1.2; }
+.epp-option__name { font-size: 0.9rem; font-weight: 600; }
+.epp-option__detail { font-size: 0.75rem; color: #64748b; }
+
+/* Tarjeta EPP: checkbox + controles de cantidad/talla */
+.epp-card {
+  border: 1px solid #d8e0ea;
+  border-radius: 0.7rem;
+  background: #fff;
+  padding: 0.6rem 0.7rem;
+  transition: border-color .15s, background .15s;
+}
+.epp-card.is-checked { border-color: #1d4ed8; background: #f3f7ff; }
+.epp-card .epp-option { border: none; background: none; padding: 0; min-height: 0; }
+.epp-card .epp-option:hover { border: none; }
+.epp-card__opts {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+  padding-left: 1.8rem; /* alinea bajo el texto, no bajo el checkbox */
+}
+.epp-card:not(.is-checked) .epp-card__opts { opacity: 0.45; }
+.epp-ctrl { display: flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; color: #64748b; font-weight: 600; }
+.epp-ctrl input, .epp-ctrl select {
+  min-height: 38px;
+  border: 1px solid #d8e0ea;
+  border-radius: 0.5rem;
+  padding: 0.2rem 0.4rem;
+  font-size: 0.85rem;
+  color: #0f172a;
+  background: #fff;
+}
+.epp-ctrl input.epp-qty { width: 60px; text-align: center; }
+.epp-ctrl select { min-width: 68px; }
+.epp-ctrl input:disabled, .epp-ctrl select:disabled { background: #f1f5f9; cursor: not-allowed; }
+
+.epp-empty {
+  grid-column: 1 / -1;
+  border: 1px dashed #d8e0ea;
+  border-radius: 0.7rem;
+  padding: 0.9rem 1rem;
+  font-size: 0.85rem;
+  color: #64748b;
+  background: #fff;
+}
+
+/* Estado de búsqueda de trabajador por RUT */
+.worker-status { min-height: 1rem; font-size: 0.78rem; font-weight: 600; margin-top: 0.25rem; }
+.worker-status--ok { color: #15803d; }
+.worker-status--warn { color: #b45309; }
+.mt-2 { margin-top: 0.6rem; }
+
+/* --------------------------------- Firma --------------------------------- */
+.signature-box {
+  border: 2px dashed #d8e0ea;
+  border-radius: 0.7rem;
+  background: #fff;
+  overflow: hidden;
+}
+#signatureCanvas { display: block; width: 100%; height: 160px; touch-action: none; }
+.link-btn {
+  font-size: 0.75rem; font-weight: 600; color: #b91c1c;
+  background: none; border: none; cursor: pointer; min-height: 32px;
+}
+.link-btn:hover { text-decoration: underline; }
+
+/* --------------------------- Botón de acción ----------------------------- */
+.btn-primary {
+  width: 100%;
+  min-height: 50px;
+  background: #1d4ed8;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.98rem;
+  border: none;
+  border-radius: 0.7rem;
+  cursor: pointer;
+  transition: background .15s, transform .05s;
+}
+.btn-primary:hover { background: #1e40af; }
+.btn-primary:active { transform: translateY(1px); }
+
+/* ---------------------------- Overlay progreso --------------------------- */
+.progress-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 27, 46, 0.55);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 1rem;
+}
+.progress-card {
+  background: #fff;
+  border-radius: 1rem;
+  padding: 1.4rem 1.5rem;
+  width: 100%;
+  max-width: 340px;
+  box-shadow: 0 20px 45px rgba(11,27,46,.3);
+}
+.progress-card h3 { font-weight: 700; margin-bottom: 0.9rem; font-size: 1rem; }
+.progress-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.7rem; }
+.progress-step { display: flex; align-items: center; gap: 0.7rem; font-size: 0.9rem; color: #64748b; }
+.progress-step__icon {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid #d8e0ea; flex: none; position: relative;
+}
+.progress-step[data-state="active"] { color: #0f172a; font-weight: 600; }
+.progress-step[data-state="active"] .progress-step__icon {
+  border-color: #f59e0b;
+  border-top-color: transparent;
+  animation: spin .7s linear infinite;
+}
+.progress-step[data-state="done"] { color: #0f172a; }
+.progress-step[data-state="done"] .progress-step__icon { border-color: #15803d; background: #15803d; }
+.progress-step[data-state="done"] .progress-step__icon::after {
+  content: ""; position: absolute; left: 5px; top: 2px;
+  width: 5px; height: 9px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg);
+}
+.progress-step[data-state="error"] .progress-step__icon { border-color: #b91c1c; background: #b91c1c; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .progress-step[data-state="active"] .progress-step__icon { animation: none; }
+}
+
+/* --------------------------------- Toast --------------------------------- */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 1.2rem;
+  transform: translateX(-50%);
+  max-width: 90%;
+  padding: 0.8rem 1.1rem;
+  border-radius: 0.7rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #fff;
+  box-shadow: 0 12px 30px rgba(11,27,46,.28);
+  z-index: 60;
+}
+.toast--ok { background: #0f2540; }
+.toast--error { background: #b91c1c; }
+
+.hidden { display: none !important; }
+
+/* Aviso y botón de configuración de conexión */
+.cfg-banner {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem;
+  background: #fff7ed; border-bottom: 1px solid #fed7aa;
+  color: #9a3412; font-size: 0.82rem; font-weight: 600;
+  padding: 0.7rem 1.5rem;
+}
+.cfg-banner__btn {
+  background: #ea580c; color: #fff; border: none; border-radius: 0.5rem;
+  padding: 0.35rem 0.7rem; font-size: 0.78rem; font-weight: 700; cursor: pointer;
+}
+.cfg-foot { margin-top: 0.9rem; text-align: center; }
+.cfg-foot__link {
+  background: none; border: none; color: #64748b; font-size: 0.75rem;
+  cursor: pointer; text-decoration: underline;
+}
+
+/* Plantilla del PDF: fuera de pantalla (NO display:none, o html2canvas captura
+   en blanco). Mantiene medidas reales para que el render salga correcto. */
+.pdf-offscreen { position: absolute; left: -10000px; top: 0; }
+
+/* ============================ Plantilla del PDF ==========================
+   El PDF se renderiza a partir de #pdfTemplate. Se define en px para tener
+   control fino sobre la captura de html2canvas en formato A5.
+   ======================================================================== */
+.pdf-sheet {
+  width: 559px;               /* ~A5 a 96dpi menos márgenes */
+  padding: 26px 30px;
+  background: #fff;
+  color: #0f172a;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.pdf-head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f2540; padding-bottom: 12px; margin-bottom: 14px; }
+.pdf-head__brand { display: flex; align-items: center; gap: 10px; }
+.pdf-head__logo { height: 34px; width: auto; object-fit: contain; }
+.pdf-head__title { font-size: 14px; font-weight: 800; text-transform: uppercase; color: #0f2540; line-height: 1.15; }
+.pdf-head__sub { font-size: 10px; color: #64748b; }
+.pdf-folio { text-align: right; }
+.pdf-folio__badge { display: inline-block; background: #0f2540; color: #fff; font-weight: 800; font-size: 12px; padding: 3px 8px; border-radius: 5px; }
+.pdf-folio__date { font-size: 10px; color: #64748b; margin-top: 4px; }
+
+.pdf-worker { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; background: #f5f8fc; border: 1px solid #d8e0ea; border-radius: 6px; padding: 10px 12px; margin-bottom: 14px; }
+.pdf-worker p { margin: 0; font-size: 11px; }
+.pdf-worker strong { color: #1e3a5f; }
+
+.pdf-section-title { font-size: 12px; font-weight: 800; color: #0f2540; margin: 0 0 6px; }
+.pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
+.pdf-table th { background: #0f2540; color: #fff; text-align: left; font-size: 10px; padding: 6px 8px; }
+.pdf-table th.center { text-align: center; }
+.pdf-td { border: 1px solid #d8e0ea; padding: 6px 8px; font-size: 11px; vertical-align: top; }
+.pdf-td--center { text-align: center; }
+.pdf-epp-detail { display: block; font-size: 9px; color: #64748b; }
+
+.pdf-legal { border: 1px solid #d8e0ea; background: #f9fafb; border-radius: 6px; padding: 9px 11px; font-size: 9px; color: #475569; margin-bottom: 16px; }
+.pdf-legal strong { color: #0f2540; }
+.pdf-legal ul { margin: 5px 0 0; padding-left: 15px; }
+
+.pdf-foot { display: grid; grid-template-columns: 1fr 150px; gap: 16px; align-items: end; padding-top: 12px; border-top: 1px solid #d8e0ea; }
+.pdf-sign { text-align: center; }
+.pdf-sign__canvas { height: 74px; border-bottom: 1px solid #94a3b8; display: flex; align-items: flex-end; justify-content: center; }
+.pdf-sign__canvas img { max-height: 70px; max-width: 100%; object-fit: contain; }
+.pdf-sign__role { font-weight: 700; font-size: 11px; margin-top: 4px; }
+.pdf-sign__name { font-size: 10px; color: #64748b; }
+.pdf-seal { border: 1px solid #d8e0ea; border-radius: 6px; padding: 8px; text-align: center; }
+.pdf-seal #qrcode { display: flex; justify-content: center; }
+.pdf-seal #qrcode img, .pdf-seal #qrcode canvas { width: 96px !important; height: 96px !important; }
+.pdf-seal__label { font-size: 8px; color: #64748b; margin-top: 5px; word-break: break-all; }
+.pdf-company { text-align: center; font-size: 9px; color: #64748b; margin-top: 14px; padding-top: 8px; border-top: 1px dashed #d8e0ea; }
