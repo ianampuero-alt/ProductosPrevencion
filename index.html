@@ -222,6 +222,7 @@
     });
 
     // Función que dibuja los elementos en la pantalla
+    // Función que dibuja los elementos en la pantalla
     function renderData(data) {
       workersData = data.workers;
       eppData = data.epp;
@@ -239,10 +240,11 @@
           optionsHtml += `<option value="${i}">${i}</option>`;
         }
 
+        // AGREGAMOS LA CLASE 'epp-row' al div principal y actualizamos el onchange
         eppList.innerHTML += `
-          <div class="flex items-center justify-between p-2 border border-slate-200 rounded hover:bg-slate-100 transition">
+          <div class="epp-row flex items-center justify-between p-2 border border-slate-200 rounded hover:bg-slate-100 transition">
             <label class="flex items-center gap-3 cursor-pointer flex-1">
-              <input type="checkbox" class="epp-item w-4 h-4" value="${epp.nombre}" onchange="this.closest('.flex').querySelector('.epp-qty').disabled = !this.checked">
+              <input type="checkbox" class="epp-item w-4 h-4" value="${epp.nombre}" onchange="this.closest('.epp-row').querySelector('.epp-qty').disabled = !this.checked">
               <div class="flex flex-col">
                 <span class="text-sm font-semibold text-slate-700">${epp.nombre}</span>
                 ${epp.detalle ? `<span class="text-xs text-slate-500">${epp.detalle}</span>` : ''}
