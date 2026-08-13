@@ -66,7 +66,7 @@
       <!-- EPP -->
       <section>
         <label class="field-label text-xs font-semibold text-slate-600 mb-2 block">Elementos a entregar</label>
-        <div id="eppList" class="epp-grid grid grid-cols-1 gap-2 max-h-48 overflow-y-auto p-2 border rounded bg-slate-50">
+        <div id="eppList" class="epp-grid grid grid-cols-1 gap-2 max-h-56 overflow-y-auto p-2 border rounded bg-slate-50">
           <p class="text-sm text-slate-500">Cargando catálogo EPP...</p>
         </div>
       </section>
@@ -211,17 +211,23 @@
             workerSelect.innerHTML += `<option value="${w.rut}">${w.nombre} (${w.rut})</option>`;
           });
 
-          // Llenar checkboxes de EPP
+          // Llenar lista de EPP (Checkbox + Input de Cantidad)
           eppList.innerHTML = '';
           eppData.forEach(epp => {
             eppList.innerHTML += `
-              <label class="flex items-center gap-3 p-2 border border-slate-200 rounded hover:bg-slate-100 cursor-pointer transition">
-                <input type="checkbox" class="epp-item w-4 h-4" value="${epp.nombre}">
-                <div class="flex flex-col">
-                  <span class="text-sm font-semibold text-slate-700">${epp.nombre}</span>
-                  ${epp.detalle ? `<span class="text-xs text-slate-500">${epp.detalle}</span>` : ''}
+              <div class="flex items-center justify-between p-2 border border-slate-200 rounded hover:bg-slate-100 transition">
+                <label class="flex items-center gap-3 cursor-pointer flex-1">
+                  <input type="checkbox" class="epp-item w-4 h-4" value="${epp.nombre}" onchange="this.closest('.flex').querySelector('.epp-qty').disabled = !this.checked">
+                  <div class="flex flex-col">
+                    <span class="text-sm font-semibold text-slate-700">${epp.nombre}</span>
+                    ${epp.detalle ? `<span class="text-xs text-slate-500">${epp.detalle}</span>` : ''}
+                  </div>
+                </label>
+                <div class="flex flex-col items-center ml-2">
+                  <span class="text-[10px] text-slate-500 mb-0.5">Cant.</span>
+                  <input type="number" min="1" max="99" value="1" class="epp-qty border border-slate-300 rounded w-14 p-1 text-center text-sm disabled:opacity-40 disabled:bg-slate-100" disabled>
                 </div>
-              </label>
+              </div>
             `;
           });
         }
@@ -247,7 +253,14 @@
     document.getElementById('generateBtn').addEventListener('click', async () => {
       const rut = workerRut.value.trim();
       const name = workerName.value.trim();
-      const selectedEPP = Array.from(document.querySelectorAll('.epp-item:checked')).map(el => el.value);
+      
+      // Capturar los EPP seleccionados Y su respectiva cantidad
+      const selectedEPP = [];
+      document.querySelectorAll('.epp-item:checked').forEach(el => {
+        const qtyInput = el.closest('.flex.items-center.justify-between').querySelector('.epp-qty');
+        const qty = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
+        selectedEPP.push({ nombre: el.value, cantidad: qty });
+      });
 
       // Validaciones
       if (!rut || !name) return alert("Por favor ingresa o selecciona un trabajador.");
@@ -277,15 +290,15 @@
       document.getElementById('pdfSignatureImg').src = signaturePad.toDataURL();
       document.getElementById('pdfTimestamp').textContent = now.toISOString();
 
-      // Llenar tabla de EPP en el PDF
+      // Llenar tabla de EPP en el PDF (ahora con la cantidad extraída)
       const tbody = document.getElementById('pdfEppTable');
       tbody.innerHTML = '';
       selectedEPP.forEach((item, idx) => {
         tbody.innerHTML += `
           <tr>
             <td class="border border-slate-300 p-2 text-center">${idx + 1}</td>
-            <td class="border border-slate-300 p-2">${item}</td>
-            <td class="border border-slate-300 p-2 text-center">1</td>
+            <td class="border border-slate-300 p-2">${item.nombre}</td>
+            <td class="border border-slate-300 p-2 text-center">${item.cantidad}</td>
           </tr>
         `;
       });
@@ -322,8 +335,7 @@
         element.parentElement.classList.add('hidden');
         progressList.innerHTML += '<li class="text-blue-600">✅ Subiendo archivo a Google Drive...</li>';
 
-        // Estructura que tu script espera (la misma que doPost(savePdf) y appendRecord)
-        const eppArray = selectedEPP.map(item => ({ nombre: item, cantidad: 1 }));
+        // Estructura para Apps Script (ya pasamos selectedEPP con su formato correcto)
         const payload = {
           contentBase64: base64Data,
           fileName: opt.filename,
@@ -336,7 +348,7 @@
             cargo: workerCargo.value,
             sucursal: workerSucursal.value,
             timestamp: now.toISOString(),
-            epp: eppArray
+            epp: selectedEPP // Aquí enviamos el array con la cantidad seleccionada
           }
         };
 
@@ -354,9 +366,17 @@
           
           setTimeout(() => {
             overlay.classList.add('hidden');
-            signaturePad.clear(); // Limpiamos la firma para el siguiente trabajador
-            // Desmarcamos EPPs opcionalmente
-            document.querySelectorAll('.epp-item').forEach(cb => cb.checked = false);
+            signaturePad.clear(); // Limpiamos la firma
+            
+            // Desmarcamos y deshabilitamos cantidades
+            document.querySelectorAll('.epp-item').forEach(cb => {
+              cb.checked = false;
+              const qtyInput = cb.closest('.flex').querySelector('.epp-qty');
+              if (qtyInput) {
+                qtyInput.value = 1;
+                qtyInput.disabled = true;
+              }
+            });
             alert("El comprobante fue generado y registrado exitosamente en tu Google Sheet.");
           }, 1500);
 
