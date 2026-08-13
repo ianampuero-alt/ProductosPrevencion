@@ -222,7 +222,6 @@
     });
 
     // Función que dibuja los elementos en la pantalla
-    // Función que dibuja los elementos en la pantalla
     function renderData(data) {
       workersData = data.workers;
       eppData = data.epp;
@@ -278,10 +277,10 @@
       const rut = workerRut.value.trim();
       const name = workerName.value.trim();
       
-      // Capturar los EPP seleccionados y la cantidad desde el menú desplegable
+      // Capturar los EPP seleccionados y la cantidad desde el menú desplegable usando 'epp-row'
       const selectedEPP = [];
       document.querySelectorAll('.epp-item:checked').forEach(el => {
-        const qtySelect = el.closest('.flex.items-center.justify-between').querySelector('.epp-qty');
+        const qtySelect = el.closest('.epp-row').querySelector('.epp-qty');
         const qty = qtySelect ? parseInt(qtySelect.value) || 1 : 1;
         selectedEPP.push({ nombre: el.value, cantidad: qty });
       });
@@ -376,22 +375,41 @@
         const result = await response.json();
 
         if (result.ok) {
-          progressList.innerHTML += '<li class="text-green-600 font-bold">🎉 ¡Comprobante guardado con éxito!</li>';
+          // Reemplazamos la lista de progreso por un mensaje de éxito visual
+          progressList.innerHTML = `
+            <div class="flex flex-col items-center justify-center py-4 text-center">
+              <svg class="w-16 h-16 text-green-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              <span class="text-green-600 font-bold text-lg">¡Enviado con Éxito!</span>
+              <span class="text-slate-500 text-sm mt-2">Los datos y el PDF fueron registrados correctamente en tu Google Sheet.</span>
+            </div>
+          `;
           
+          // Esperamos 3 segundos para que el usuario lea el mensaje y luego reseteamos todo el formulario
           setTimeout(() => {
             overlay.classList.add('hidden');
+            
+            // 1. Limpiar selector y datos del trabajador
+            workerSelect.value = '';
+            workerRut.value = '';
+            workerName.value = '';
+            workerRazon.value = '';
+            workerCargo.value = '';
+            workerSucursal.value = '';
+            
+            // 2. Limpiar la firma
             signaturePad.clear(); 
             
+            // 3. Desmarcar todos los EPP y bloquear las cantidades de vuelta a 1
             document.querySelectorAll('.epp-item').forEach(cb => {
               cb.checked = false;
-              const qtySelect = cb.closest('.flex').querySelector('.epp-qty');
+              const qtySelect = cb.closest('.epp-row').querySelector('.epp-qty');
               if (qtySelect) {
                 qtySelect.value = 1;
                 qtySelect.disabled = true;
               }
             });
-            alert("El comprobante fue generado y registrado exitosamente en tu Google Sheet.");
-          }, 1500);
+            
+          }, 3000);
 
         } else {
           throw new Error(result.error);
