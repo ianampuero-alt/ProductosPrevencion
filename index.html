@@ -4,21 +4,23 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>Entrega de EPP · Comprobante con Firma</title>
-
   <!-- Tailwind (CDN) para el layout utilitario -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Estilos de componentes propios -->
   <link rel="stylesheet" href="assets/css/styles.css" />
-
   <!-- Librerías de terceros (firma, QR, PDF) -->
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <!-- === FIX: la plantilla del PDF se renderiza fuera de pantalla pero arriba (top:0) === -->
+  <!-- Esto elimina el espacio en blanco superior y el "corrido a la derecha" al capturar. -->
+  <style>
+    #pdfWrapper { position: fixed; top: 0; left: -10000px; width: 750px; }
+  </style>
 </head>
 <body class="bg-slate-100 p-4 md:p-8">
-
   <main class="max-w-2xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-
     <!-- Encabezado -->
     <header class="app-header px-6 py-5 border-b border-slate-200 flex items-center gap-4">
       <img class="app-header__logo h-12" src="assets/img/alo-group-logo.png" alt="ALO Group" />
@@ -29,16 +31,13 @@
         </p>
       </div>
     </header>
-
     <div class="px-6 py-6 space-y-6">
-
       <!-- Trabajador -->
       <section>
         <label class="field-label text-xs font-semibold text-slate-600" for="workerSelect">Búsqueda rápida por nombre</label>
         <select id="workerSelect" class="input w-full p-2 border rounded mt-1 text-sm bg-slate-50">
           <option>Cargando personal...</option>
         </select>
-
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
           <div>
             <label class="field-label text-xs font-semibold text-slate-600" for="workerRut">RUT</label>
@@ -62,7 +61,6 @@
           </div>
         </div>
       </section>
-
       <!-- EPP -->
       <section>
         <label class="field-label text-xs font-semibold text-slate-600 mb-2 block">Elementos a entregar</label>
@@ -70,7 +68,6 @@
           <p class="text-sm text-slate-500">Cargando catálogo EPP...</p>
         </div>
       </section>
-
       <!-- Firma -->
       <section>
         <div class="flex justify-between items-center mb-2">
@@ -81,19 +78,16 @@
           <canvas id="signatureCanvas" class="w-full h-32 touch-none"></canvas>
         </div>
       </section>
-
       <!-- Acción -->
       <button id="generateBtn" class="btn-primary w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition" type="button">
         Generar y Registrar Comprobante
       </button>
-
     </div>
   </main>
-
   <!-- ===================== Plantilla del PDF ===================== -->
-  <div class="hidden">
+  <!-- FIX: antes era <div class="hidden">. Ahora usa #pdfWrapper (ver <style> del head). -->
+  <div id="pdfWrapper">
     <div id="pdfTemplate" class="pdf-sheet p-8 bg-white text-slate-800 text-xs w-[750px]">
-
       <div class="pdf-head flex justify-between items-end border-b-2 border-slate-800 pb-4 mb-4">
         <div class="flex items-center gap-4">
           <img class="pdf-head__logo h-12" src="assets/img/alo-group-logo.png" alt="Logo" />
@@ -109,7 +103,6 @@
           </div>
         </div>
       </div>
-
       <div class="pdf-worker bg-slate-50 p-3 rounded border border-slate-200 mb-4 grid grid-cols-2 gap-2">
         <p><strong>Trabajador:</strong> <span id="pdfName"></span></p>
         <p><strong>RUT:</strong> <span id="pdfRut"></span></p>
@@ -117,7 +110,6 @@
         <p><strong>Sucursal:</strong> <span id="pdfSucursal"></span></p>
         <p class="col-span-2"><strong>Razón Social:</strong> <span id="pdfRazon"></span></p>
       </div>
-
       <h3 class="pdf-section-title font-bold text-sm mb-2 text-slate-800">Detalle de elementos entregados</h3>
       <table class="pdf-table w-full border-collapse border border-slate-300 mb-6">
         <thead>
@@ -129,11 +121,9 @@
         </thead>
         <tbody id="pdfEppTable"></tbody>
       </table>
-
       <div class="pdf-legal border p-3 rounded mb-8 text-[10px] text-slate-600 bg-slate-50 text-justify">
         <strong>DECLARACIÓN Y MARCO LEGAL:</strong> Declaro haber recibido en forma gratuita los Elementos de Protección Personal detallados, junto con la instrucción sobre su correcto uso, cuidado y mantención, comprometiéndome a utilizarlos de forma obligatoria durante mi jornada laboral. (Ley N° 16.744 sobre Accidentes del Trabajo, Ordinario N° 4890/282 de la DT y Artículo 53 del DS N° 594 del MINSAL).
       </div>
-
       <div class="pdf-foot grid grid-cols-2 gap-4 items-end pt-4 border-t border-slate-200 mt-8">
         <div class="pdf-sign text-center">
           <div class="pdf-sign__canvas border-b border-slate-400 pb-1 mb-1 h-20 flex justify-center items-end">
@@ -142,7 +132,7 @@
           <div class="pdf-sign__role font-bold">Firma del Trabajador</div>
           <div class="pdf-sign__name text-[10px] text-slate-500" id="pdfWorkerSignatureLabel"></div>
         </div>
-        
+
         <div class="pdf-seal flex items-center justify-end gap-3">
           <div class="text-[9px] text-slate-500 text-right">
             <p class="font-bold text-slate-700">Sello digital de validación</p>
@@ -151,10 +141,8 @@
           <div id="qrcode" class="border border-slate-200 p-1 bg-white rounded"></div>
         </div>
       </div>
-
     </div>
   </div>
-
   <!-- ============================ Overlay progreso ========================= -->
   <div id="progressOverlay" class="progress-overlay hidden fixed inset-0 bg-slate-900/60 flex justify-center items-center z-50">
     <div class="progress-card bg-white p-6 rounded-xl shadow-lg w-80">
@@ -162,15 +150,12 @@
       <ul id="progressList" class="progress-list text-sm space-y-2 text-slate-600"></ul>
     </div>
   </div>
-
   <!-- ============================ LÓGICA JAVASCRIPT ========================= -->
   <script>
     // 1. TU URL DE GOOGLE APPS SCRIPT
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwYG6k6fNQKb2ezKBeis6duLczInMIvXChekKHbe0o4Y9O-UbtxKxtQtXBn00PFkJOf/exec";
-
     let workersData = [];
     let eppData = [];
-
     // Referencias al DOM
     const workerSelect = document.getElementById('workerSelect');
     const workerRut = document.getElementById('workerRut');
@@ -179,11 +164,9 @@
     const workerCargo = document.getElementById('workerCargo');
     const workerSucursal = document.getElementById('workerSucursal');
     const eppList = document.getElementById('eppList');
-
     // Inicializar Canvas de Firma
     const canvas = document.getElementById('signatureCanvas');
     const signaturePad = new SignaturePad(canvas, { backgroundColor: 'rgb(248, 250, 252)' });
-
     function resizeCanvas() {
       const ratio = Math.max(window.devicePixelRatio || 1, 1);
       canvas.width = canvas.offsetWidth * ratio;
@@ -194,7 +177,6 @@
     window.addEventListener("resize", resizeCanvas);
     resizeCanvas();
     document.getElementById('clearBtn').addEventListener('click', () => signaturePad.clear());
-
     // 2. CARGAR DATOS (Con estrategia de caché en el navegador)
     window.addEventListener('DOMContentLoaded', async () => {
       // Intentar cargar primero desde el caché local (Carga instantánea)
@@ -202,12 +184,11 @@
       if (cachedData) {
         renderData(JSON.parse(cachedData));
       }
-
       // Buscar datos frescos en Google Sheets en segundo plano
       try {
         const response = await fetch(WEB_APP_URL + "?action=data");
         const data = await response.json();
-        
+
         if (data.ok) {
           localStorage.setItem('eppAppCache', JSON.stringify(data));
           renderData(data);
@@ -220,17 +201,15 @@
         }
       }
     });
-
     // Función que dibuja los elementos en la pantalla
     function renderData(data) {
       workersData = data.workers;
       eppData = data.epp;
-      
+
       workerSelect.innerHTML = '<option value="">-- Selecciona un trabajador --</option>';
       workersData.forEach(w => {
         workerSelect.innerHTML += `<option value="${w.rut}">${w.nombre} (${w.rut})</option>`;
       });
-
       // Llenar lista de EPP (Checkbox + Select de Cantidad de 1 a 10)
       eppList.innerHTML = '';
       eppData.forEach(epp => {
@@ -238,7 +217,6 @@
         for (let i = 1; i <= 10; i++) {
           optionsHtml += `<option value="${i}">${i}</option>`;
         }
-
         // AGREGAMOS LA CLASE 'epp-row' al div principal y actualizamos el onchange
         eppList.innerHTML += `
           <div class="epp-row flex items-center justify-between p-2 border border-slate-200 rounded hover:bg-slate-100 transition">
@@ -259,7 +237,6 @@
         `;
       });
     }
-
     // 3. AUTOCOMPLETAR DATOS AL SELECCIONAR TRABAJADOR
     workerSelect.addEventListener('change', (e) => {
       const selected = workersData.find(w => w.rut === e.target.value);
@@ -271,12 +248,11 @@
         workerSucursal.value = selected.sucursal || '';
       }
     });
-
     // 4. GENERACIÓN DE PDF Y ENVÍO POST
     document.getElementById('generateBtn').addEventListener('click', async () => {
       const rut = workerRut.value.trim();
       const name = workerName.value.trim();
-      
+
       // Capturar los EPP seleccionados y la cantidad desde el menú desplegable usando 'epp-row'
       const selectedEPP = [];
       document.querySelectorAll('.epp-item:checked').forEach(el => {
@@ -284,19 +260,16 @@
         const qty = qtySelect ? parseInt(qtySelect.value) || 1 : 1;
         selectedEPP.push({ nombre: el.value, cantidad: qty });
       });
-
       if (!rut || !name) return alert("Por favor ingresa o selecciona un trabajador.");
       if (selectedEPP.length === 0) return alert("Selecciona al menos un elemento de protección (EPP).");
       if (signaturePad.isEmpty()) return alert("El trabajador debe firmar el documento.");
-
       const overlay = document.getElementById('progressOverlay');
       const progressList = document.getElementById('progressList');
       overlay.classList.remove('hidden');
       progressList.innerHTML = '<li class="text-blue-600">✅ Preparando información...</li>';
-
       const folio = 'EPP-' + Math.floor(100000 + Math.random() * 900000);
       const now = new Date();
-      
+
       document.getElementById('pdfFolio').textContent = folio;
       document.getElementById('pdfDate').textContent = now.toLocaleDateString('es-CL');
       document.getElementById('pdfTime').textContent = now.toLocaleTimeString('es-CL');
@@ -305,11 +278,9 @@
       document.getElementById('pdfCargo').textContent = workerCargo.value;
       document.getElementById('pdfSucursal').textContent = workerSucursal.value;
       document.getElementById('pdfRazon').textContent = workerRazon.value;
-
       document.getElementById('pdfWorkerSignatureLabel').textContent = `${name} (${rut})`;
       document.getElementById('pdfSignatureImg').src = signaturePad.toDataURL();
       document.getElementById('pdfTimestamp').textContent = now.toISOString();
-
       const tbody = document.getElementById('pdfEppTable');
       tbody.innerHTML = '';
       selectedEPP.forEach((item, idx) => {
@@ -321,7 +292,6 @@
           </tr>
         `;
       });
-
       const qrContainer = document.getElementById('qrcode');
       qrContainer.innerHTML = '';
       new QRCode(qrContainer, {
@@ -329,27 +299,26 @@
         width: 50,
         height: 50
       });
-
       try {
         progressList.innerHTML += '<li class="text-blue-600">✅ Convirtiendo a formato PDF...</li>';
-        
-        const element = document.getElementById('pdfTemplate');
-        element.parentElement.classList.remove('hidden');
 
+        const element = document.getElementById('pdfTemplate');
+
+        // === FIX: formato CARTA + captura sin desplazamiento ni espacio superior ===
         const opt = {
           margin:       10,
           filename:     `Comprobante_EPP_${rut}.pdf`,
           image:        { type: 'jpeg', quality: 0.98 },
-          html2canvas:  { scale: 2 },
-          jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+          html2canvas:  { scale: 2, useCORS: true, scrollX: 0, scrollY: 0, windowWidth: 750 },
+          jsPDF:        { unit: 'mm', format: 'letter', orientation: 'portrait' }
         };
+        // Pequeña espera para asegurar que la firma (dataURL) ya cargó en el <img> antes de capturar.
+        await new Promise(r => setTimeout(r, 60));
 
         const pdfDataUri = await html2pdf().set(opt).from(element).outputPdf('datauristring');
         const base64Data = pdfDataUri.split(',')[1];
-        
-        element.parentElement.classList.add('hidden');
-        progressList.innerHTML += '<li class="text-blue-600">✅ Subiendo archivo a Google Drive...</li>';
 
+        progressList.innerHTML += '<li class="text-blue-600">✅ Subiendo archivo a Google Drive...</li>';
         const payload = {
           contentBase64: base64Data,
           fileName: opt.filename,
@@ -365,15 +334,12 @@
             epp: selectedEPP
           }
         };
-
         const response = await fetch(WEB_APP_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(payload)
         });
-
         const result = await response.json();
-
         if (result.ok) {
           // Reemplazamos la lista de progreso por un mensaje de éxito visual
           progressList.innerHTML = `
@@ -383,11 +349,11 @@
               <span class="text-slate-500 text-sm mt-2">Los datos y el PDF fueron registrados correctamente en tu Google Sheet.</span>
             </div>
           `;
-          
+
           // Esperamos 3 segundos para que el usuario lea el mensaje y luego reseteamos todo el formulario
           setTimeout(() => {
             overlay.classList.add('hidden');
-            
+
             // 1. Limpiar selector y datos del trabajador
             workerSelect.value = '';
             workerRut.value = '';
@@ -395,10 +361,10 @@
             workerRazon.value = '';
             workerCargo.value = '';
             workerSucursal.value = '';
-            
+
             // 2. Limpiar la firma
-            signaturePad.clear(); 
-            
+            signaturePad.clear();
+
             // 3. Desmarcar todos los EPP y bloquear las cantidades de vuelta a 1
             document.querySelectorAll('.epp-item').forEach(cb => {
               cb.checked = false;
@@ -408,13 +374,11 @@
                 qtySelect.disabled = true;
               }
             });
-            
-          }, 3000);
 
+          }, 3000);
         } else {
           throw new Error(result.error);
         }
-
       } catch (err) {
         console.error(err);
         alert("Hubo un error al procesar el archivo: " + err.message);
