@@ -78,9 +78,10 @@
       </button>
     </div>
   </main>
-  <!-- ===================== Plantilla del PDF ===================== -->
-  <div class="hidden">
-    <div id="pdfTemplate" class="pdf-sheet p-8 bg-white text-slate-800 text-xs w-[750px]">
+
+  <!-- ===================== Plantilla del PDF (Renderizado Off-Screen) ===================== -->
+  <div style="position: absolute; left: -9999px; top: -9999px; width: 800px;">
+    <div id="pdfTemplate" class="pdf-sheet p-8 bg-white text-slate-800 text-xs box-border" style="width: 794px; min-height: 1123px;">
       <div class="pdf-head flex justify-between items-end border-b-2 border-slate-800 pb-4 mb-4">
         <div class="flex items-center gap-4">
           <img class="pdf-head__logo h-12" src="assets/img/alo-group-logo.png" alt="Logo" />
@@ -136,6 +137,7 @@
       </div>
     </div>
   </div>
+
   <!-- ============================ Overlay progreso ========================= -->
   <div id="progressOverlay" class="progress-overlay hidden fixed inset-0 bg-slate-900/60 flex justify-center items-center z-50">
     <div class="progress-card bg-white p-6 rounded-xl shadow-lg w-80">
@@ -143,13 +145,13 @@
       <ul id="progressList" class="progress-list text-sm space-y-2 text-slate-600"></ul>
     </div>
   </div>
+
   <!-- ============================ LÓGICA JAVASCRIPT ========================= -->
   <script>
-    // 1. TU URL DE GOOGLE APPS SCRIPT
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwYG6k6fNQKb2ezKBeis6duLczInMIvXChekKHbe0o4Y9O-UbtxKxtQtXBn00PFkJOf/exec";
     let workersData = [];
     let eppData = [];
-    // Referencias al DOM
+
     const workerSelect = document.getElementById('workerSelect');
     const workerRut = document.getElementById('workerRut');
     const workerName = document.getElementById('workerName');
@@ -157,9 +159,10 @@
     const workerCargo = document.getElementById('workerCargo');
     const workerSucursal = document.getElementById('workerSucursal');
     const eppList = document.getElementById('eppList');
-    // Inicializar Canvas de Firma
+
     const canvas = document.getElementById('signatureCanvas');
     const signaturePad = new SignaturePad(canvas, { backgroundColor: 'rgb(248, 250, 252)' });
+
     function resizeCanvas() {
       const ratio = Math.max(window.devicePixelRatio || 1, 1);
       canvas.width = canvas.offsetWidth * ratio;
@@ -170,14 +173,12 @@
     window.addEventListener("resize", resizeCanvas);
     resizeCanvas();
     document.getElementById('clearBtn').addEventListener('click', () => signaturePad.clear());
-    // 2. CARGAR DATOS (Con estrategia de caché en el navegador)
+
     window.addEventListener('DOMContentLoaded', async () => {
-      // Intentar cargar primero desde el caché local (Carga instantánea)
       const cachedData = localStorage.getItem('eppAppCache');
       if (cachedData) {
         renderData(JSON.parse(cachedData));
       }
-      // Buscar datos frescos en Google Sheets en segundo plano
       try {
         const response = await fetch(WEB_APP_URL + "?action=data");
         const data = await response.json();
@@ -194,7 +195,7 @@
         }
       }
     });
-    // Función que dibuja los elementos en la pantalla
+
     function renderData(data) {
       workersData = data.workers;
       eppData = data.epp;
@@ -203,14 +204,13 @@
       workersData.forEach(w => {
         workerSelect.innerHTML += `<option value="${w.rut}">${w.nombre} (${w.rut})</option>`;
       });
-      // Llenar lista de EPP (Checkbox + Select de Cantidad de 1 a 10)
+
       eppList.innerHTML = '';
       eppData.forEach(epp => {
         let optionsHtml = '';
         for (let i = 1; i <= 10; i++) {
           optionsHtml += `<option value="${i}">${i}</option>`;
         }
-        // AGREGAMOS LA CLASE 'epp-row' al div principal y actualizamos el onchange
         eppList.innerHTML += `
           <div class="epp-row flex items-center justify-between p-2 border border-slate-200 rounded hover:bg-slate-100 transition">
             <label class="flex items-center gap-3 cursor-pointer flex-1">
@@ -230,7 +230,7 @@
         `;
       });
     }
-    // 3. AUTOCOMPLETAR DATOS AL SELECCIONAR TRABAJADOR
+
     workerSelect.addEventListener('change', (e) => {
       const selected = workersData.find(w => w.rut === e.target.value);
       if (selected) {
@@ -241,21 +241,22 @@
         workerSucursal.value = selected.sucursal || '';
       }
     });
-    // 4. GENERACIÓN DE PDF Y ENVÍO POST
+
     document.getElementById('generateBtn').addEventListener('click', async () => {
       const rut = workerRut.value.trim();
       const name = workerName.value.trim();
 
-      // Capturar los EPP seleccionados y la cantidad desde el menú desplegable usando 'epp-row'
       const selectedEPP = [];
       document.querySelectorAll('.epp-item:checked').forEach(el => {
         const qtySelect = el.closest('.epp-row').querySelector('.epp-qty');
         const qty = qtySelect ? parseInt(qtySelect.value) || 1 : 1;
         selectedEPP.push({ nombre: el.value, cantidad: qty });
       });
+
       if (!rut || !name) return alert("Por favor ingresa o selecciona un trabajador.");
       if (selectedEPP.length === 0) return alert("Selecciona al menos un elemento de protección (EPP).");
       if (signaturePad.isEmpty()) return alert("El trabajador debe firmar el documento.");
+
       const overlay = document.getElementById('progressOverlay');
       const progressList = document.getElementById('progressList');
       overlay.classList.remove('hidden');
@@ -274,6 +275,7 @@
       document.getElementById('pdfWorkerSignatureLabel').textContent = `${name} (${rut})`;
       document.getElementById('pdfSignatureImg').src = signaturePad.toDataURL();
       document.getElementById('pdfTimestamp').textContent = now.toISOString();
+
       const tbody = document.getElementById('pdfEppTable');
       tbody.innerHTML = '';
       selectedEPP.forEach((item, idx) => {
@@ -285,6 +287,7 @@
           </tr>
         `;
       });
+
       const qrContainer = document.getElementById('qrcode');
       qrContainer.innerHTML = '';
       new QRCode(qrContainer, {
@@ -292,22 +295,32 @@
         width: 50,
         height: 50
       });
+
       try {
         progressList.innerHTML += '<li class="text-blue-600">✅ Convirtiendo a formato PDF...</li>';
 
+        // Mínima pausa para garantizar la decodificación completa del QR e imagen de firma
+        await new Promise(resolve => setTimeout(resolve, 300));
+
         const element = document.getElementById('pdfTemplate');
-        element.parentElement.classList.remove('hidden');
+
         const opt = {
-          margin:       10,
+          margin:       0,
           filename:     `Comprobante_EPP_${rut}.pdf`,
           image:        { type: 'jpeg', quality: 0.98 },
-          html2canvas:  { scale: 2 },
-          jsPDF:        { unit: 'mm', format: 'letter', orientation: 'portrait' }
+          html2canvas:  { 
+            scale: 2,
+            useCORS: true,
+            scrollX: 0,
+            scrollY: 0,
+            windowWidth: 800 // Forzar el canvas a procesar como si tuviera pantalla de escritorio
+          },
+          jsPDF:        { unit: 'px', format: [794, 1123], orientation: 'portrait' } // Proporción exacta A4
         };
+
         const pdfDataUri = await html2pdf().set(opt).from(element).outputPdf('datauristring');
         const base64Data = pdfDataUri.split(',')[1];
 
-        element.parentElement.classList.add('hidden');
         progressList.innerHTML += '<li class="text-blue-600">✅ Subiendo archivo a Google Drive...</li>';
         const payload = {
           contentBase64: base64Data,
@@ -324,14 +337,15 @@
             epp: selectedEPP
           }
         };
+
         const response = await fetch(WEB_APP_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(payload)
         });
+
         const result = await response.json();
         if (result.ok) {
-          // Reemplazamos la lista de progreso por un mensaje de éxito visual
           progressList.innerHTML = `
             <div class="flex flex-col items-center justify-center py-4 text-center">
               <svg class="w-16 h-16 text-green-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -340,11 +354,9 @@
             </div>
           `;
 
-          // Esperamos 3 segundos para que el usuario lea el mensaje y luego reseteamos todo el formulario
           setTimeout(() => {
             overlay.classList.add('hidden');
 
-            // 1. Limpiar selector y datos del trabajador
             workerSelect.value = '';
             workerRut.value = '';
             workerName.value = '';
@@ -352,10 +364,8 @@
             workerCargo.value = '';
             workerSucursal.value = '';
 
-            // 2. Limpiar la firma
             signaturePad.clear();
 
-            // 3. Desmarcar todos los EPP y bloquear las cantidades de vuelta a 1
             document.querySelectorAll('.epp-item').forEach(cb => {
               cb.checked = false;
               const qtySelect = cb.closest('.epp-row').querySelector('.epp-qty');
@@ -364,7 +374,6 @@
                 qtySelect.disabled = true;
               }
             });
-
           }, 3000);
         } else {
           throw new Error(result.error);
