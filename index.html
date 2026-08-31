@@ -28,30 +28,27 @@
     <div class="px-6 py-6 space-y-6">
       <!-- Trabajador -->
       <section>
-        <label class="field-label text-xs font-semibold text-slate-600" for="workerSelect">Búsqueda rápida por nombre</label>
-        <select id="workerSelect" class="input w-full p-2 border rounded mt-1 text-sm bg-slate-50">
-          <option>Cargando personal...</option>
-        </select>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
-          <div>
-            <label class="field-label text-xs font-semibold text-slate-600" for="workerRut">RUT</label>
-            <input id="workerRut" class="input w-full p-2 border rounded mt-1 text-sm" type="text" placeholder="Ej: 12.345.678-9" />
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="md:col-span-2">
+            <label class="field-label text-xs font-semibold text-slate-600" for="workerRut">Ingresa o Digita RUT del Trabajador</label>
+            <input id="workerRut" list="rutList" class="input w-full p-2.5 border border-blue-400 rounded mt-1 text-sm bg-blue-50/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium" type="text" placeholder="Escribe el RUT (Ej: 12.345.678-9)" autocomplete="off" />
+            <datalist id="rutList"></datalist>
           </div>
           <div>
             <label class="field-label text-xs font-semibold text-slate-600" for="workerName">Nombre</label>
-            <input id="workerName" class="input w-full p-2 border rounded mt-1 text-sm" type="text" placeholder="Nombre y apellidos" />
+            <input id="workerName" class="input w-full p-2 border rounded mt-1 text-sm bg-slate-50" type="text" placeholder="Nombre y apellidos" />
           </div>
           <div>
             <label class="field-label text-xs font-semibold text-slate-600" for="workerRazon">Razón Social</label>
-            <input id="workerRazon" class="input w-full p-2 border rounded mt-1 text-sm" type="text" placeholder="Empresa" />
+            <input id="workerRazon" class="input w-full p-2 border rounded mt-1 text-sm bg-slate-50" type="text" placeholder="Empresa" />
           </div>
           <div>
             <label class="field-label text-xs font-semibold text-slate-600" for="workerCargo">Cargo</label>
-            <input id="workerCargo" class="input w-full p-2 border rounded mt-1 text-sm" type="text" placeholder="Cargo" />
+            <input id="workerCargo" class="input w-full p-2 border rounded mt-1 text-sm bg-slate-50" type="text" placeholder="Cargo" />
           </div>
-          <div class="md:col-span-2">
+          <div>
             <label class="field-label text-xs font-semibold text-slate-600" for="workerSucursal">Sucursal</label>
-            <input id="workerSucursal" class="input w-full p-2 border rounded mt-1 text-sm" type="text" placeholder="Sucursal" />
+            <input id="workerSucursal" class="input w-full p-2 border rounded mt-1 text-sm bg-slate-50" type="text" placeholder="Sucursal" />
           </div>
         </div>
       </section>
@@ -152,13 +149,13 @@
     let workersData = [];
     let eppData = [];
 
-    const workerSelect = document.getElementById('workerSelect');
     const workerRut = document.getElementById('workerRut');
     const workerName = document.getElementById('workerName');
     const workerRazon = document.getElementById('workerRazon');
     const workerCargo = document.getElementById('workerCargo');
     const workerSucursal = document.getElementById('workerSucursal');
     const eppList = document.getElementById('eppList');
+    const rutList = document.getElementById('rutList');
 
     const canvas = document.getElementById('signatureCanvas');
     const signaturePad = new SignaturePad(canvas, { backgroundColor: 'rgb(248, 250, 252)' });
@@ -173,6 +170,11 @@
     window.addEventListener("resize", resizeCanvas);
     resizeCanvas();
     document.getElementById('clearBtn').addEventListener('click', () => signaturePad.clear());
+
+    // Normaliza el RUT eliminando puntos, guiones y convirtiendo a mayúsculas
+    function cleanRut(rut) {
+      return rut ? rut.toString().replace(/[^0-9kK]/g, '').toUpperCase() : '';
+    }
 
     window.addEventListener('DOMContentLoaded', async () => {
       const cachedData = localStorage.getItem('eppAppCache');
@@ -190,8 +192,7 @@
       } catch (err) {
         console.error("Error conectando con Google Sheets:", err);
         if (!cachedData) {
-          workerSelect.innerHTML = '<option>Error de conexión. Revisa Apps Script.</option>';
-          eppList.innerHTML = '<p class="text-sm text-red-500">Error al cargar EPP.</p>';
+          eppList.innerHTML = '<p class="text-sm text-red-500">Error al cargar datos.</p>';
         }
       }
     });
@@ -200,11 +201,13 @@
       workersData = data.workers;
       eppData = data.epp;
 
-      workerSelect.innerHTML = '<option value="">-- Selecciona un trabajador --</option>';
+      // Llenar datalist para autocompletar con menú desplegable al escribir el RUT
+      rutList.innerHTML = '';
       workersData.forEach(w => {
-        workerSelect.innerHTML += `<option value="${w.rut}">${w.nombre} (${w.rut})</option>`;
+        rutList.innerHTML += `<option value="${w.rut}">${w.nombre} - ${w.cargo || ''}</option>`;
       });
 
+      // Llenar catálogo de EPP
       eppList.innerHTML = '';
       eppData.forEach(epp => {
         let optionsHtml = '';
@@ -231,10 +234,13 @@
       });
     }
 
-    workerSelect.addEventListener('change', (e) => {
-      const selected = workersData.find(w => w.rut === e.target.value);
+    // EVENTO DE AUTOCOMPLETADO AUTOMÁTICO AL DIGITAR EL RUT
+    workerRut.addEventListener('input', (e) => {
+      const typedRut = cleanRut(e.target.value);
+      if (!typedRut) return;
+
+      const selected = workersData.find(w => cleanRut(w.rut) === typedRut);
       if (selected) {
-        workerRut.value = selected.rut || '';
         workerName.value = selected.nombre || '';
         workerRazon.value = selected.razonSocial || '';
         workerCargo.value = selected.cargo || '';
@@ -253,7 +259,7 @@
         selectedEPP.push({ nombre: el.value, cantidad: qty });
       });
 
-      if (!rut || !name) return alert("Por favor ingresa o selecciona un trabajador.");
+      if (!rut || !name) return alert("Por favor ingresa o selecciona un RUT válido registrado.");
       if (selectedEPP.length === 0) return alert("Selecciona al menos un elemento de protección (EPP).");
       if (signaturePad.isEmpty()) return alert("El trabajador debe firmar el documento.");
 
@@ -299,7 +305,6 @@
       try {
         progressList.innerHTML += '<li class="text-blue-600">✅ Convirtiendo a formato PDF...</li>';
 
-        // Mínima pausa para garantizar la decodificación completa del QR e imagen de firma
         await new Promise(resolve => setTimeout(resolve, 300));
 
         const element = document.getElementById('pdfTemplate');
@@ -313,9 +318,9 @@
             useCORS: true,
             scrollX: 0,
             scrollY: 0,
-            windowWidth: 800 // Forzar el canvas a procesar como si tuviera pantalla de escritorio
+            windowWidth: 800
           },
-          jsPDF:        { unit: 'px', format: [794, 1123], orientation: 'portrait' } // Proporción exacta A4
+          jsPDF:        { unit: 'px', format: [794, 1123], orientation: 'portrait' }
         };
 
         const pdfDataUri = await html2pdf().set(opt).from(element).outputPdf('datauristring');
@@ -357,7 +362,6 @@
           setTimeout(() => {
             overlay.classList.add('hidden');
 
-            workerSelect.value = '';
             workerRut.value = '';
             workerName.value = '';
             workerRazon.value = '';
