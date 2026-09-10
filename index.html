@@ -308,23 +308,34 @@
         await new Promise(resolve => setTimeout(resolve, 300));
 
         const element = document.getElementById('pdfTemplate');
+const wrapper = element.parentElement; // el div con left:-9999px
 
-        const opt = {
-          margin:       0,
-          filename:     `Comprobante_EPP_${rut}.pdf`,
-          image:        { type: 'jpeg', quality: 0.98 },
-          html2canvas:  { 
-            scale: 2,
-            useCORS: true,
-            scrollX: 0,
-            scrollY: 0,
-            windowWidth: 800
-          },
-          jsPDF:        { unit: 'px', format: [794, 1123], orientation: 'portrait' }
-        };
+const opt = {
+  margin: 0,
+  filename: `Comprobante_EPP_${rut}.pdf`,
+  image: { type: 'jpeg', quality: 0.98 },
+  html2canvas: {
+    scale: 2,
+    useCORS: true,
+    backgroundColor: '#ffffff'
+    // 👈 SIN scrollX / scrollY / windowWidth
+  },
+  jsPDF: { unit: 'px', format: [794, 1123], orientation: 'portrait' }
+};
 
-        const pdfDataUri = await html2pdf().set(opt).from(element).outputPdf('datauristring');
-        const base64Data = pdfDataUri.split(',')[1];
+// Traemos la plantilla al (0,0) SOLO mientras se captura.
+// El overlay de progreso (z-50) la tapa, así que el usuario nunca la ve.
+let pdfDataUri;
+wrapper.style.left = '0';
+wrapper.style.top  = '0';
+try {
+  pdfDataUri = await html2pdf().set(opt).from(element).outputPdf('datauristring');
+} finally {
+  wrapper.style.left = '-9999px';   // la devolvemos fuera de pantalla pase lo que pase
+  wrapper.style.top  = '-9999px';
+}
+
+const base64Data = pdfDataUri.split(',')[1];
 
         progressList.innerHTML += '<li class="text-blue-600">✅ Subiendo archivo a Google Drive...</li>';
         const payload = {
